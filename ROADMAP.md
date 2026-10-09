@@ -30,6 +30,7 @@
 
 ## 最近完成
 
+- 2026-10-09 接入公司 LiteLLM 网关配额：新增 `adapters/company.py` 查 `/key/info`（5h 窗口）与 `/v2/user/info`（1mo 窗口）映射 `RateLimits`，key 从 env `ANTHROPIC_AUTH_TOKEN` / keychain `codex-company` 解析、文件缓存 300s；CC/Codex statusline 在无原生限额时按 `ANTHROPIC_BASE_URL` / `model_provider` 判定公司网关并兜底显示 5h/1mo（长窗口标签 7d→1mo）。版本 0.6.0，已 push 到 fork（LiangZhi-GT1001/token-tracker）并本机 uv 安装 + 状态栏实机渲染验证；未发布 PyPI。新增 `tests/test_company.py`，Ruff/mypy/diff 检查通过。
 - 2026-10-03 09:55 规范与进度文档精简：稳定边界保留于 AGENTS.md 与对应手册，ROADMAP 收敛当前状态及最近记录；本次未修改业务实现，未重跑历史运行验收。证据：[项目规范](AGENTS.md)。
 - 2026-09-28 14:42 `0.5.8` 已发布 PyPI（源码与 tag 已 push）：包含 Codex Hook 纯文本兼容、新模型定价与 GPT 命名空间识别，以及 Windows Kimi 状态栏命令修复；版本与锁文件、README 中英文已同步；发布 commit `f8e572c` 与 annotated tag `v0.5.8` 已推送；完整 pytest 与英文 dumb terminal pytest 各 456 passed，Ruff、mypy（41 个源文件）、锁文件与 diff 检查通过。证据：[GitHub CI](https://github.com/stormzhang/token-tracker/actions/runs/36387698193)。
 - 2026-09-26 18:25 Codex Hook ANSI 乱码兼容修复已随 0.5.8 发布：Codex 0.156.0 起过滤 Hook 消息中的控制字符，旧版彩色 `systemMessage` 的 ESC 被删除后留下 `[38；2；…m` 裸码（[上游变更](https://github.com/openai/codex/pull/46710)）；Codex 伪 statusline 改为两行纯文本，保留项目、token、成本、模型、额度与进度条；本地用户级脚本未覆盖。证据：[38;2;…m` 裸码（[上游变更](https://github.com/openai/codex/pull/46710)。
