@@ -271,6 +271,17 @@ def main():
     except Exception:
         pass
 
+    # 公司网关（company-seeway 等）无标准 token_count 限额，兜底显示公司 5h/1mo 配额
+    company_quota = False
+    if rl is None and provider:
+        try:
+            from token_tracker.adapters.company import is_company_provider, load_rate_limits as _company_rl
+            if is_company_provider(provider):
+                rl = _company_rl()
+                company_quota = rl is not None
+        except Exception:
+            pass
+
     payload_session_id = payload.get("session_id") or payload.get("thread_id")
     terminal_session_id = session_id if exact_session else ""
     if isinstance(payload_session_id, str) and payload_session_id:
@@ -308,7 +319,8 @@ def main():
         line2.append(_render_limit("5h", rl.five_hour_pct, rl.five_hour_resets_at, now_ts))
         has_limit = True
     if rl and rl.seven_day_pct is not None:
-        line2.append(_render_limit("7d", rl.seven_day_pct, rl.seven_day_resets_at, now_ts))
+        # 公司配额的长窗口是 1mo，非原生 7d
+        line2.append(_render_limit("1mo" if company_quota else "7d", rl.seven_day_pct, rl.seven_day_resets_at, now_ts))
         has_limit = True
     if ctx is not None:
         size = (info or {}).get("model_context_window") or 0

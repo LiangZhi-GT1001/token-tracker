@@ -280,8 +280,9 @@ def render(data, now, tps=None):
 
     # --- Line 2: Limit: 5h | 7d | Ctx ---
     rl = data.get("rate_limits") or {}
+    seven_label = "1mo" if data.get("_company_quota") else "7d"
     rl_parts = []
-    for key, label in [("five_hour", "5h"), ("seven_day", "7d")]:
+    for key, label in [("five_hour", "5h"), ("seven_day", seven_label)]:
         entry = rl.get(key) or {}
         pct = entry.get("used_percentage")
         if pct is not None:
@@ -394,6 +395,21 @@ def main():
     # 就会把别的会话攒的 TPS 状态与终端映射整个清掉（曾被无 session_id 的测试帧清表）
     data["_tps_state"] = state
     data["_terminal_map"] = term_map
+    # 公司网关（ANTHROPIC_BASE_URL 指向 aigw/seeway/phigent）无原生 rate_limits，兜底显示公司 5h/1mo
+    rl = data.get("rate_limits") or {}
+    if not rl.get("five_hour") and not rl.get("seven_day"):
+        try:
+            from token_tracker.adapters.company import is_company_base_url, load_rate_limits as _company_rl
+            if is_company_base_url(os.environ.get("ANTHROPIC_BASE_URL", "")):
+                c = _company_rl()
+                if c and (c.five_hour_pct is not None or c.seven_day_pct is not None):
+                    data["rate_limits"] = {
+                        "five_hour": {"used_percentage": c.five_hour_pct, "resets_at": c.five_hour_resets_at},
+                        "seven_day": {"used_percentage": c.seven_day_pct, "resets_at": c.seven_day_resets_at},
+                    }
+                    data["_company_quota"] = True
+        except Exception:
+            pass
     save_data(data, now)
     render(data, now, tps)
 
